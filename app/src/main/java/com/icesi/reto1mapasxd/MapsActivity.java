@@ -3,8 +3,6 @@ package com.icesi.reto1mapasxd;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Dialog;
-import android.content.Context;
-import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.location.Address;
@@ -21,13 +19,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
-
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -36,7 +30,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import java.util.List;
 import java.util.Locale;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, View.OnClickListener {
 
     private static final int REQUEST_CODE = 11 ;
 
@@ -48,7 +42,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private FloatingActionButton boton;
 
-    private Dialog epicDialog;
+    public Dialog epicDialog;
 
     private EditText et_lugar;
 
@@ -66,39 +60,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        ActivityCompat.requestPermissions(this, new String[]{
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-        }, REQUEST_CODE);
-
         super.onCreate(savedInstanceState);
-
-
 
         setContentView(R.layout.activity_maps);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-
-
-
-
-
-
-        epicDialog = new Dialog(getApplicationContext());
-
-
-
-        boton = findViewById(R.id.fab);
-        boton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showPopup();
-            }
-        });
-
         manager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        epicDialog = new Dialog(this);
 
     }
 
@@ -117,32 +87,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(final GoogleMap googleMap) {
         mMap = googleMap;
 
-        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
-            @Override
-            public boolean onMarkerClick(Marker marker) {
-                    String msj = "Usetd se encuentra en: ";
+        ActivityCompat.requestPermissions(this, new String[]{
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+        }, REQUEST_CODE);
 
-                    try {
-                        Geocoder geo = new Geocoder(MapsActivity.this.getApplicationContext(), Locale.getDefault());
-                        List<Address> addresses = geo.getFromLocation(lat, lon, 1);
-                        if (addresses.isEmpty()) {
-                            Toast.makeText(getApplicationContext(), "Esperando por la dirección...", Toast.LENGTH_LONG).show();
-                        }
-                        else {
-                            if (addresses.size() > 0) {
-                                    marker.setSnippet(msj + addresses.get(0).getAddressLine(0) + addresses.get(0).getAdminArea());
-
-                            }
-                        }
-                    }
-                    catch (Exception e) {
-                        e.printStackTrace(); // getFromLocation() may sometimes fail
-                    }
+        boton = (FloatingActionButton) findViewById(R.id.fab);
 
 
-                return false;
-            }
-        });
+        boton.setOnClickListener(this);
 
         manager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 1, new LocationListener() {
 
@@ -183,9 +136,41 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
+
+
+        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                    String msj = "Usted se encuentra en: ";
+
+                    try {
+                        Geocoder geo = new Geocoder(MapsActivity.this.getApplicationContext(), Locale.getDefault());
+                        List<Address> addresses = geo.getFromLocation(lat, lon, 1);
+                        if (addresses.isEmpty()) {
+                            Toast.makeText(getApplicationContext(), "Esperando por la dirección...", Toast.LENGTH_LONG).show();
+                        }
+                        else {
+                            if (addresses.size() > 0) {
+                                    marker.setSnippet(msj + addresses.get(0).getAddressLine(0) + addresses.get(0).getAdminArea());
+
+                            }
+                        }
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace(); // getFromLocation() may sometimes fail
+                    }
+
+
+                return false;
+            }
+        });
+
+
+
         }
 
         private void showPopup(){
+
             epicDialog.setContentView(R.layout.epic_popup);
             close_popup = (ImageView) epicDialog.findViewById(R.id.btn_cerrar);
             btn_agregar= epicDialog.findViewById(R.id.btn_agregarLugar);
@@ -223,5 +208,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
 
-
+    @Override
+    public void onClick(View v) {
+        showPopup();
+    }
 }
