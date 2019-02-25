@@ -18,6 +18,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -27,6 +28,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -40,7 +42,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private LocationManager manager;
 
-    private FloatingActionButton boton;
+    public EditText textView_cercano;
+
+    //private FloatingActionButton boton;
 
     public Dialog epicDialog;
 
@@ -54,7 +58,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public Double lon;
 
+    public LatLng newLatLng;
+
     public MarkerOptions actual;
+
+    public ArrayList<MarkerOptions> marcadores;
 
 
     @Override
@@ -69,7 +77,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
         manager = (LocationManager) getSystemService(LOCATION_SERVICE);
         epicDialog = new Dialog(this);
-
+        textView_cercano = findViewById(R.id.textView_cercano);
     }
 
 
@@ -92,10 +100,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Manifest.permission.ACCESS_COARSE_LOCATION
         }, REQUEST_CODE);
 
-        boton = (FloatingActionButton) findViewById(R.id.fab);
+        //boton = (FloatingActionButton) findViewById(R.id.fab);
 
 
-        boton.setOnClickListener(this);
+        //boton.setOnClickListener(this);
+        marcadores= new ArrayList<MarkerOptions>();
+
 
         manager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 1, new LocationListener() {
 
@@ -108,12 +118,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
                 if(first==false){
-                    actual = new MarkerOptions().position(ln).title("Its me").icon(BitmapDescriptorFactory.fromResource(R.drawable.manx));
+                    actual = new MarkerOptions().position(ln).title("Mi ubicación").icon(BitmapDescriptorFactory.fromResource(R.drawable.manx));
                     mMap.addMarker(actual);
+
                     first=true;
                 }
                 else{
                     actual.position(ln);
+                    Toast.makeText(getApplicationContext(), "Ubicación actual actualizada", Toast.LENGTH_LONG).show();
                 }
 
 
@@ -141,7 +153,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(Marker marker) {
-                    String msj = "Usted se encuentra en: ";
+                    String msj = "Dirección: ";
 
                     try {
                         Geocoder geo = new Geocoder(MapsActivity.this.getApplicationContext(), Locale.getDefault());
@@ -162,6 +174,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
                 return false;
+            }
+        });
+
+        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(LatLng latLng) {
+                newLatLng = latLng;
+                showPopup();
+
             }
         });
 
@@ -199,12 +220,60 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
         public void guardarLugar(String lugar){
-            LatLng ln = new LatLng(lat,lon);
-            MarkerOptions nuevo = new MarkerOptions().position(ln).title(lugar).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET));
-
+            MarkerOptions nuevo = new MarkerOptions().position(newLatLng).title(lugar).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET));
+            marcadores.add(nuevo);
             mMap.addMarker(nuevo);
+            String d = masCercano();
+            textView_cercano.setText(d);
 
 
+            //Toast.makeText(this, d, Toast.LENGTH_LONG).show();
+
+        }
+
+
+        public String masCercano(){
+            int n = marcadores.size();
+            String m = "";
+            Location local = new Location("local");
+            local.setLatitude(actual.getPosition().latitude);
+            local.setLongitude(actual.getPosition().longitude);
+            List<Float> flotantes = new ArrayList<>();
+
+
+            for (int i =0; i < n;i++ ) {
+                Location l = new Location("nuevo" + i);
+                l.setLatitude(marcadores.get(i).getPosition().latitude);
+                l.setLongitude(marcadores.get(i).getPosition().longitude);
+                float x = local.distanceTo(l);
+                flotantes.add(x);
+            }
+
+            int indice =0;
+            Float mayor= flotantes.get(0);
+
+            for (int i =0; i < n;i++){
+                if(i==0){
+                    indice=i;
+                }
+                else{
+                    if(flotantes.get(i) < mayor){
+                        mayor=flotantes.get(i);
+                        indice=i;
+                    }
+                }
+            }
+            float cer = 501;
+
+            if(mayor < cer) {
+                m = "El lugar más cercano es: " + marcadores.get(indice).getTitle() + " a " + mayor + " metros";
+            }
+            else{
+                m = "El lugar más cercano es: " + marcadores.get(indice).getTitle();
+            }
+
+
+            return m;
         }
 
 
