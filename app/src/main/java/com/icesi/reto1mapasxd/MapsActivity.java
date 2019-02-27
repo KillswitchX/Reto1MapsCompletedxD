@@ -20,6 +20,8 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -63,6 +65,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public MarkerOptions actual;
 
     public ArrayList<MarkerOptions> marcadores;
+
+    public Marker marc;
 
 
     @Override
@@ -119,13 +123,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 if(first==false){
                     actual = new MarkerOptions().position(ln).title("Mi ubicación").icon(BitmapDescriptorFactory.fromResource(R.drawable.manx));
-                    mMap.addMarker(actual);
-
+                    marc = mMap.addMarker(actual);
+                    //mMap.addMarker(actual);
                     first=true;
                 }
                 else{
-                    actual.position(ln);
+
+                    marc.remove();
+
+                    actual = new MarkerOptions().position(ln).title("Mi ubicación").icon(BitmapDescriptorFactory.fromResource(R.drawable.manx));
+                    marc = mMap.addMarker(actual);
+
+                    //mMap.addMarker(actual);
+                    mMap.moveCamera(CameraUpdateFactory.newLatLng(ln));
+
                     Toast.makeText(getApplicationContext(), "Ubicación actual actualizada", Toast.LENGTH_LONG).show();
+
+                    String d = masCercano();
+                    textView_cercano.setText(d);
                 }
 
 
@@ -157,7 +172,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                     try {
                         Geocoder geo = new Geocoder(MapsActivity.this.getApplicationContext(), Locale.getDefault());
-                        List<Address> addresses = geo.getFromLocation(lat, lon, 1);
+                        List<Address> addresses = geo.getFromLocation(marker.getPosition().latitude, marker.getPosition().longitude, 1);
                         if (addresses.isEmpty()) {
                             Toast.makeText(getApplicationContext(), "Esperando por la dirección...", Toast.LENGTH_LONG).show();
                         }
@@ -227,14 +242,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             textView_cercano.setText(d);
 
 
-            //Toast.makeText(this, d, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Nuevo marcador agregado", Toast.LENGTH_LONG).show();
 
         }
 
 
         public String masCercano(){
             int n = marcadores.size();
-            String m = "";
+            String m = "El lugar más cercano es: ";
+
+            if(n==0){
+                return m;
+            }
+
+
             Location local = new Location("local");
             local.setLatitude(actual.getPosition().latitude);
             local.setLongitude(actual.getPosition().longitude);
@@ -250,7 +271,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
 
             int indice =0;
-            Float mayor= flotantes.get(0);
+
+
+               Float  mayor= flotantes.get(0);
+
+
 
             for (int i =0; i < n;i++){
                 if(i==0){
@@ -266,10 +291,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             float cer = 501;
 
             if(mayor < cer) {
-                m = "El lugar más cercano es: " + marcadores.get(indice).getTitle() + " a " + mayor + " metros";
+                m += marcadores.get(indice).getTitle() + " a " + mayor + " metros";
             }
             else{
-                m = "El lugar más cercano es: " + marcadores.get(indice).getTitle();
+                m += marcadores.get(indice).getTitle();
             }
 
 
